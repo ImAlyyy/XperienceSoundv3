@@ -151,13 +151,14 @@ class MainActivity : AppCompatActivity() {
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(this, AudioAlarmReceiver::class.java).apply {
             putExtra("audioName", audioName)
+            putExtra("originalTime", timeInMillis) // ✅ clave correcta para repetir
         }
         val requestCode = (timeInMillis.toString() + audioName).hashCode()
         val pendingIntent = PendingIntent.getBroadcast(this, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
-        // Configurar la alarma para repetirse diariamente y despertar el dispositivo
         alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
     }
+
 
     private fun loadSavedAlarms() {
         val savedAlarms = sharedPreferences.getStringSet("alarmList", mutableSetOf())

@@ -12,6 +12,8 @@ import java.util.Calendar
 class AudioAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         val audioName = intent?.getStringExtra("audioName") ?: return
+        val originalTime = intent.getLongExtra("originalTime", -1L)
+
         Log.d("AudioAlarmReceiver", "Alarma activada para: $audioName")
 
         val serviceIntent = Intent(context, AudioService::class.java).apply {
@@ -32,35 +34,35 @@ class AudioAlarmReceiver : BroadcastReceiver() {
             Log.e("AudioAlarmReceiver", "AudioService no está registrado en AndroidManifest.xml")
         }
 
-        // **Reprogramar la alarma para ejecutarse al día siguiente**
-        reprogramAlarm(context, audioName)
+        // Reprogramar la alarma para el mismo tiempo del día siguiente
+        if (originalTime != -1L) {
+            reprogramAlarm(context, audioName, originalTime)
+        }
     }
 
-    private fun reprogramAlarm(context: Context, audioName: String) {
+    private fun reprogramAlarm(context: Context, audioName: String, originalTime: Long) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val nextTimeInMillis = originalTime + AlarmManager.INTERVAL_DAY
+
         val intent = Intent(context, AudioAlarmReceiver::class.java).apply {
-            putExtra("audioName", audioName) // Mantiene el mismo audio programado
+            putExtra("audioName", audioName)
+            putExtra("originalTime", nextTimeInMillis)
         }
 
-        // **Corregir PendingIntent con FLAG_IMMUTABLE**
+        val requestCode = audioName.hashCode()
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            0,
+            requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Configurar la próxima alarma para el día siguiente a la misma hora
-        val calendar = Calendar.getInstance().apply {
-            add(Calendar.DAY_OF_YEAR, 1) // Reprogramar para el día siguiente
-        }
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextTimeInMillis, pendingIntent)
         } else {
-            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, AlarmManager.INTERVAL_DAY, pendingIntent)
+            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, nextTimeInMillis, AlarmManager.INTERVAL_DAY, pendingIntent)
         }
 
-        Log.d("AudioAlarmReceiver", "Alarma reprogramada para el día siguiente")
+        Log.d("AudioAlarmReceiver", "Alarma reprogramada para: $nextTimeInMillis")
     }
 }
