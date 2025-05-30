@@ -153,18 +153,10 @@ class MainActivity : AppCompatActivity() {
             putExtra("audioName", audioName)
         }
         val requestCode = (timeInMillis.toString() + audioName).hashCode()
-        val pendingIntent = PendingIntent.getBroadcast(
-            this, requestCode, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        val pendingIntent = PendingIntent.getBroadcast(this, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
-        // 🔹 **Ahora el audio se repetirá diariamente**
-        alarmManager.setRepeating(
-            AlarmManager.RTC_WAKEUP,
-            timeInMillis,
-            AlarmManager.INTERVAL_DAY,  // Se repite cada 24 horas
-            pendingIntent
-        )
+        // Configurar la alarma para repetirse diariamente y despertar el dispositivo
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
     }
 
     private fun loadSavedAlarms() {
